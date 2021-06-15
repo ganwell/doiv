@@ -12,6 +12,7 @@ base = Path(".").absolute()
 base_git = Path(base, ".git")
 base_build = Path(base, "build")
 base_void = Path(base_build, "void-packages")
+srcpkgs = Path(base_void, "srcpkgs")
 known_flags = {
     "test": "test podman",
     "help": "show this",
@@ -55,6 +56,7 @@ def init():
         xbps_src = run.bake("xbps-src")
         pkg = xbps_src.pkg
         fetch = xbps_src.fetch
+        extract = xbps_src.extract
         unshare = podman.unshare
         git = run.git
 
@@ -78,6 +80,11 @@ def prepare(cmd):
     cmd.xbps_src("binary-bootstrap")
 
 
+def fetch(cmd):
+    for pkg in srcpkgs.iterdir():
+        cmd.extract(pkg)
+
+
 def main(flags):
     if "help" in flags:
         return help()
@@ -91,7 +98,8 @@ def main(flags):
         clean(cmd)
     if not base_void.exists():
         prepare(cmd)
-    cmd.fetch("sent")
+    if "fetch" in flags:
+        fetch(cmd)
 
 
 if __name__ == "__main__":

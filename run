@@ -81,8 +81,12 @@ def prepare(cmd):
 
 
 def fetch(cmd):
+    i = 0
     for pkg in srcpkgs.iterdir():
+        i += 1
         cmd.extract(pkg)
+        if i > 1000:
+            break
 
 
 def main(flags):

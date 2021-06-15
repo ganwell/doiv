@@ -1,6 +1,5 @@
 FROM docker.io/voidlinux/voidlinux
 ENV LANG=en_US.UTF-8
-# COPY container/locale.conf /etc/locale.conf
 RUN \
     xbps-install -Suy tmux ncurses-term base-devel git bash; \
     groupadd build; \

@@ -1,0 +1,3 @@
+#!/bin/sh
+
+cd /home/build/void-packages && exec ./xbps-src "$@"

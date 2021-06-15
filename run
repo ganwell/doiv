@@ -1,0 +1,78 @@
+#!/usr/bin/env python3
+
+import sys
+from pathlib import Path
+from shlex import split as s
+
+import sh
+
+base = Path(".").absolute()
+base_git = Path(base, ".git")
+base_build = Path(base, "build")
+base_void = Path(base, "void-packages")
+known_flags = {
+    "test": "test podman",
+    "help": "show this",
+    "clean": "clean-up repository",
+}
+
+
+def help():
+    for key in known_flags.keys():
+        print(f"{key:10s}: {known_flags[key]}")
+
+
+def init():
+    class Commands:
+        podman = sh.podman
+        build = podman.bake("build", ".")
+        build(_out=sys.stdout)
+        container = build("-q").strip()
+        run = podman.bake(
+            "run",
+            "--rm",
+            "--init",
+            f"-v{base_git}:/data",
+            f"-v{base_build}:/home/build:U",
+            container,
+            _out=sys.stdout,
+        )
+        print(run)
+        xbps_src = run.bake("./xbps-src")
+        pkg = xbps_src.pkg
+        base_build.mkdir(parents=True, exist_ok=True)
+        unshare = podman.unshare
+        git = run.git
+
+    return Commands
+
+
+def clean(cmd):
+    cmd.unshare(*s("rm -rf build/"))
+
+
+def test(cmd):
+    cmd.run(*s("touch huhu"))
+
+
+def prepare(cmd):
+    cmd.git.clone("--shared", "-b", "packagegs/master", "/data", "void-packages")
+
+
+def main(flags):
+    if "help" in flags:
+        return help()
+    cmd = init()
+    if "test" in flags:
+        return test(cmd)
+    if "clean" in flags:
+        return clean(cmd)
+    if not base_void.exists():
+        prepare(cmd)
+    # cmd.xbps_src("binary-bootstrap")
+    # pkg = xbps_src.bake("pkg")
+    # pkg("sent")
+
+
+if __name__ == "__main__":
+    main(set(sys.argv[1:]))

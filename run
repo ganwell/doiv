@@ -16,6 +16,7 @@ known_flags = {
     "test": "test podman",
     "help": "show this",
     "clean": "clean-up repository",
+    "run": "print run command",
 }
 
 
@@ -42,8 +43,10 @@ def init():
         container = build("-q").strip()
         run = podman.bake(
             "run",
+            "-ti",
             "--rm",
             "--init",
+            f"-eTERM={os.environ['TERM']}",
             f"-v{base_git}:/data",
             f"-v{base_build}:/home/build:U",
             container,
@@ -51,6 +54,7 @@ def init():
         )
         xbps_src = run.bake("xbps-src")
         pkg = xbps_src.pkg
+        fetch = xbps_src.fetch
         unshare = podman.unshare
         git = run.git
 
@@ -61,7 +65,7 @@ def clean(cmd):
     with chdir(base_void):
         sh.git.push("--all", f"file://{base_git}")
         sh.git.push("--tags", f"file://{base_git}")
-    # cmd.unshare(*s("rm -rf build/"))
+    cmd.unshare(*s("rm -rf build/"))
 
 
 def test(cmd):
@@ -80,11 +84,14 @@ def main(flags):
     cmd = init()
     if "test" in flags:
         return test(cmd)
+    if "run" in flags:
+        print(cmd.run)
+        return
     if "clean" in flags:
         clean(cmd)
     if not base_void.exists():
         prepare(cmd)
-    cmd.pkg("sent")
+    cmd.fetch("sent")
 
 
 if __name__ == "__main__":
